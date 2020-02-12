@@ -1,5 +1,5 @@
 # cloud-id
-A simple CLI utility to lookup cloud providers.  
+A simple CLI utility to lookup cloud providers. Currently only AWS is supported.  
 
 Installation:
 ```

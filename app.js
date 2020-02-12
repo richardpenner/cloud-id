@@ -26,7 +26,7 @@ const argv = require("yargs")
             await outputHostnameResults(argv.hostname);
     })
     .demandCommand()
-    .version("0.1")
+    .version("1.0.0")
     .argv;
 
 async function outputHostnameResults(hostname){
