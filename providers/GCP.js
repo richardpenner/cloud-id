@@ -74,7 +74,6 @@ class GCP {
                 ips.push(record.replace('ip6:', ''));
             }
         });
-        console.log("returning ",ips);
         return ips;
     }
 }

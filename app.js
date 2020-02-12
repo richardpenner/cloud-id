@@ -30,6 +30,10 @@ const argv = require("yargs")
     .demandCommand(1, "You must specify at least one command")
     .strict()
     .version("1.0.0")
+    .fail((msg, error, yargs) => {
+        console.error(`Error: ${error}`);
+        process.exit(1);
+    })
     .argv;
 
 function outputHeader() {
