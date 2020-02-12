@@ -18,15 +18,17 @@ class AWS {
         return matcher;
     }
 
-    async checkAddresses(ipAddress) {
+    async checkAddresses(address) {
         if (this._matcher == null) {
             this._matcher = await this.createMatcher();
         }
-        if (Array.isArray(ipAddress)) {
-            return this._matcher.containsAny(ipAddress);
+        if (Array.isArray(address)) {
+            return address.map(a => {
+                return this._matcher.contains(a);
+            });
         }
 
-        return this._matcher.contains(ipAddress);
+        return this._matcher.contains(address);
     }
 }
 

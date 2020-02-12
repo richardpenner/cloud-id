@@ -3,8 +3,9 @@ const fs = require("fs");
 const {Resolver} = require("dns").promises;
 const resolver = new Resolver();
 
-const {AWS} = require("./providers");
+const {AWS, GCP} = require("./providers");
 const aws = new AWS();
+const gcp = new GCP();
 
 const {URL} = require("url");
 
@@ -16,12 +17,14 @@ const argv = require("yargs")
             }
             const fileContents = fs.readFileSync(argv.filename).toString();
             const hostnameLines = fileContents.split("\n");
+            outputHeader();
             for (let hostname of hostnameLines) {
                 await outputHostnameResults(hostname);
             }
     })
     .command("host <hostname>", "lookup specified hostname", () => {}, 
         async (argv) => {
+            outputHeader();
             await outputHostnameResults(argv.hostname);
     })
     .demandCommand(1, "You must specify at least one command")
@@ -29,9 +32,15 @@ const argv = require("yargs")
     .version("1.0.0")
     .argv;
 
+function outputHeader() {
+    console.log(`Hostname\tIP\tAWS\tGCP`);
+}
+
 async function outputHostnameResults(hostname){
     const results = await resolve(hostname);
-    console.log(`${hostname}\t${results.isAWS}`);
+    for (let result of results) {
+        console.log(`${hostname}\t${result.address}\t${result.isAWS}\t${result.isGCP}`);
+    }
 }
 
 async function resolve(hostnameOrURL) {
@@ -42,9 +51,14 @@ async function resolve(hostnameOrURL) {
     }
     catch {}
     const addresses = await resolver.resolve4(hostname);
-    const isAWS = await aws.checkAddresses(addresses);
-    
-    return {isAWS};
+    const results = [];
+    for (let address of addresses) {
+        const isAWS = await aws.checkAddresses(address);
+        const isGCP = await gcp.checkAddresses(address);
+        results.push({address, isAWS, isGCP});
+    }
+
+    return results;
 }
 
 function die(error) {
