@@ -6,10 +6,9 @@ const resolver = new Resolver();
 const {AWS} = require("./providers");
 const aws = new AWS();
 
+const {URL} = require("url");
+
 const argv = require("yargs")
-    // .command("*", "default command", () => {}, (argv) => {
-    //     console.log("default command.");
-    // })
     .command("file <filename>", "lookup hosts in specified file", () => {}, 
         async (argv) => {
             if (!fs.existsSync(argv.filename)) {
@@ -25,7 +24,8 @@ const argv = require("yargs")
         async (argv) => {
             await outputHostnameResults(argv.hostname);
     })
-    .demandCommand()
+    .demandCommand(1, "You must specify at least one command")
+    .strict()
     .version("1.0.0")
     .argv;
 
@@ -34,7 +34,13 @@ async function outputHostnameResults(hostname){
     console.log(`${hostname}\t${results.isAWS}`);
 }
 
-async function resolve(hostname) {
+async function resolve(hostnameOrURL) {
+    let hostname = hostnameOrURL;
+    try {
+        const url = new URL(hostnameOrURL);
+        hostname = url.hostname;
+    }
+    catch {}
     const addresses = await resolver.resolve4(hostname);
     const isAWS = await aws.checkAddresses(addresses);
     
