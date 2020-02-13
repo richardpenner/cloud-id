@@ -4,9 +4,10 @@ const {Resolver} = require("dns").promises;
 const resolver = new Resolver();
 const {Parser} = require("json2csv");
 
-const {AWS, GCP} = require("./providers");
+const {AWS, GCP, Azure} = require("./providers");
 const aws = new AWS();
 const gcp = new GCP();
+const azure = new Azure();
 
 const {URL} = require("url");
 
@@ -61,7 +62,6 @@ require("yargs")
     .argv;
 
 async function outputHostnameResults(argv, results){
-    console.log(argv);
     if (argv.json) {
         console.log(results);
     }
@@ -81,27 +81,37 @@ async function outputHostnameResults(argv, results){
 
 async function resolve(hostnameOrURL) {
     let hostname = hostnameOrURL;
+    let addresses = [];
     try {
         const url = new URL(hostnameOrURL);
         hostname = url.hostname;
     }
     catch {}
-    const addresses = await resolver.resolve4(hostname);
-    const results = [];
-    for (let address of addresses) {
-        const isAWS = await aws.checkAddresses(address);
-        const isGCP = (!isAWS && await gcp.checkAddresses(address));
-        let provider = "unknown";
-        if (isAWS) {
-            provider = "amazon";
+    try {
+        addresses = await resolver.resolve4(hostname);
+        const results = [];
+        for (let address of addresses) {
+            const isAWS = await aws.checkAddresses(address);
+            const isAzure = (!isAWS && await azure.checkAddresses(address));
+            const isGCP = (!isAWS && !isAzure && await gcp.checkAddresses(address));
+            let provider = "unknown";
+            if (isAWS) {
+                provider = "amazon";
+            }
+            else if (isAzure) {
+                provider = "azure";
+            }
+            else if (isGCP) {
+                provider = "google";
+            }
+            results.push({hostname, address, provider});
         }
-        else if (isGCP) {
-            provider = "google";
-        }
-        results.push({hostname, address, provider});
-    }
 
-    return results;
+        return results;
+    }
+    catch (err) {
+        return [{hostname, address: "unknown", provider: "unknown"}];
+    }
 }
 
 function die(error) {
