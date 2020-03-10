@@ -2,14 +2,17 @@
 const fs = require("fs");
 const {Resolver} = require("dns").promises;
 const resolver = new Resolver();
-const {Parser} = require("json2csv");
+const {parseAsync} = require("json2csv");
+const {URL} = require("url");
+const cliProgress = require("cli-progress");
 
 const {AWS, GCP, Azure} = require("./providers");
 const aws = new AWS();
 const gcp = new GCP();
 const azure = new Azure();
 
-const {URL} = require("url");
+
+process.on("uncaughtException", die);
 
 require("yargs")
     .command("file <filename>", "lookup hosts in specified file", () => {}, 
@@ -20,16 +23,20 @@ require("yargs")
             const fileContents = fs.readFileSync(argv.filename).toString();
             const hostnameLines = fileContents.split("\n");
             let results = [];
+            const bar = new cliProgress.SingleBar({etaBuffer: 1000}, cliProgress.Presets.shades_classic);
+            bar.start(hostnameLines.length, 0);
+            let idx = 0;
             for (let hostname of hostnameLines) {
                 const result = await resolve(hostname);
                 results = results.concat(result);
+                bar.increment();
             }
             await outputHostnameResults(argv, results);
     })
     .command("host <hostname>", "lookup specified hostname", () => {}, 
         async (argv) => {
             const result = await resolve(argv.hostname);
-            await outputHostnameResults(argv,[result]);
+            await outputHostnameResults(argv,result);
     })
     .demandCommand(1, "You must specify at least one command")
     .options({
@@ -62,20 +69,23 @@ require("yargs")
     .argv;
 
 async function outputHostnameResults(argv, results){
+    const humanOutput = (argv.csv == null);
     if (argv.json) {
         console.log(results);
     }
+    else if (humanOutput) {
+        console.table(results);
+    }
     else {
-        const fields = ["hostname", "address", "provider"];
-        const opts = {fields};
-        const humanOutput = (argv.csv == null);
-        if (humanOutput) { 
-            opts.delimiter = "\t";
-            opts.quote = "";
+        try {
+            const fields = ["hostname", "address", "provider"];
+            const opts = {fields};
+            const csv = await parseAsync(results, opts);
+            console.log(csv);
         }
-        const parser = new Parser(opts);
-        const csv = parser.parse(results);
-        console.log(csv);
+        catch (err) {
+            return die(err);
+        }
     }
 }
 
@@ -106,7 +116,6 @@ async function resolve(hostnameOrURL) {
             }
             results.push({hostname, address, provider});
         }
-
         return results;
     }
     catch (err) {

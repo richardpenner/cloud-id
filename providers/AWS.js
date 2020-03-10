@@ -27,7 +27,6 @@ class AWS {
                 return this._matcher.contains(a);
             });
         }
-
         return this._matcher.contains(address);
     }
 }
