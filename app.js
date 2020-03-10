@@ -31,6 +31,7 @@ require("yargs")
                 results = results.concat(result);
                 bar.increment();
             }
+            bar.stop();
             await outputHostnameResults(argv, results);
     })
     .command("host <hostname>", "lookup specified hostname", () => {}, 
