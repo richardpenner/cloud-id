@@ -1,6 +1,6 @@
 {
   "name": "cloud-id",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Lookup cloud providers based on hostname",
   "main": "app.js",
   "dependencies": {
