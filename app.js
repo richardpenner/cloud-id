@@ -5,6 +5,7 @@ const resolver = new Resolver();
 const {parseAsync} = require("json2csv");
 const {URL} = require("url");
 const cliProgress = require("cli-progress");
+const pjson = require('./package.json');
 
 const {AWS, GCP, Azure} = require("./providers");
 const aws = new AWS();
@@ -55,7 +56,7 @@ require("yargs")
         }
     })
     .strict()
-    .version("1.0.0")
+    .version(pjson.version)
     .fail((msg, error, yargs) => {
         if (error) {
             console.error(`Error: ${error}`);
